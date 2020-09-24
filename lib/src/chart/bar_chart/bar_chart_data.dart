@@ -9,6 +9,8 @@ import 'package:fl_chart/src/utils/lerp.dart';
 import 'package:fl_chart/src/utils/utils.dart';
 import 'package:flutter/material.dart';
 
+import '../line_chart/line_chart_data.dart';
+
 /// [BarChart] needs this class to render itself.
 ///
 /// It holds data needed to draw a bar chart,
@@ -29,6 +31,9 @@ class BarChartData extends AxisChartData with EquatableMixin {
   /// Handles touch behaviors and responses.
   final BarTouchData barTouchData;
 
+// Draws extra lines
+  final ExtraLinesData extraLinesData;
+
   /// [BarChart] draws some [barGroups] and aligns them using [alignment],
   /// if [alignment] is [BarChartAlignment.center], you can define [groupsSpace]
   /// to apply space between them.
@@ -45,21 +50,23 @@ class BarChartData extends AxisChartData with EquatableMixin {
   /// You can annotate some regions with a highlight color using [rangeAnnotations].
   ///
   /// You can modify [barTouchData] to customize touch behaviors and responses.
-  BarChartData({
-    List<BarChartGroupData> barGroups,
-    double groupsSpace,
-    BarChartAlignment alignment,
-    FlTitlesData titlesData,
-    BarTouchData barTouchData,
-    FlAxisTitleData axisTitleData,
-    double maxY,
-    double minY,
-    FlGridData gridData,
-    FlBorderData borderData,
-    RangeAnnotations rangeAnnotations,
-    Color backgroundColor,
-  })  : barGroups = barGroups ?? const [],
+  BarChartData(
+      {List<BarChartGroupData> barGroups,
+      double groupsSpace,
+      BarChartAlignment alignment,
+      FlTitlesData titlesData,
+      BarTouchData barTouchData,
+      FlAxisTitleData axisTitleData,
+      double maxY,
+      double minY,
+      FlGridData gridData,
+      FlBorderData borderData,
+      RangeAnnotations rangeAnnotations,
+      Color backgroundColor,
+      ExtraLinesData extraLinesData})
+      : barGroups = barGroups ?? const [],
         groupsSpace = groupsSpace ?? 16,
+        extraLinesData = extraLinesData,
         alignment = alignment ?? BarChartAlignment.spaceBetween,
         titlesData = titlesData ?? FlTitlesData(),
         barTouchData = barTouchData ?? BarTouchData(),
@@ -139,20 +146,20 @@ class BarChartData extends AxisChartData with EquatableMixin {
 
   /// Copies current [BarChartData] to a new [BarChartData],
   /// and replaces provided values.
-  BarChartData copyWith({
-    List<BarChartGroupData> barGroups,
-    double groupsSpace,
-    BarChartAlignment alignment,
-    FlTitlesData titlesData,
-    FlAxisTitleData axisTitleData,
-    RangeAnnotations rangeAnnotations,
-    BarTouchData barTouchData,
-    FlGridData gridData,
-    FlBorderData borderData,
-    double maxY,
-    double minY,
-    Color backgroundColor,
-  }) {
+  BarChartData copyWith(
+      {List<BarChartGroupData> barGroups,
+      double groupsSpace,
+      BarChartAlignment alignment,
+      FlTitlesData titlesData,
+      FlAxisTitleData axisTitleData,
+      RangeAnnotations rangeAnnotations,
+      BarTouchData barTouchData,
+      FlGridData gridData,
+      FlBorderData borderData,
+      double maxY,
+      double minY,
+      Color backgroundColor,
+      ExtraLinesData extraLinesData}) {
     return BarChartData(
       barGroups: barGroups ?? this.barGroups,
       groupsSpace: groupsSpace ?? this.groupsSpace,
@@ -165,6 +172,7 @@ class BarChartData extends AxisChartData with EquatableMixin {
       borderData: borderData ?? this.borderData,
       maxY: maxY ?? this.maxY,
       minY: minY ?? this.minY,
+      extraLinesData: extraLinesData ?? this.extraLinesData,
       backgroundColor: backgroundColor ?? this.backgroundColor,
     );
   }
@@ -178,11 +186,15 @@ class BarChartData extends AxisChartData with EquatableMixin {
         groupsSpace: lerpDouble(a.groupsSpace, b.groupsSpace, t),
         alignment: b.alignment,
         titlesData: FlTitlesData.lerp(a.titlesData, b.titlesData, t),
-        axisTitleData: FlAxisTitleData.lerp(a.axisTitleData, b.axisTitleData, t),
-        rangeAnnotations: RangeAnnotations.lerp(a.rangeAnnotations, b.rangeAnnotations, t),
+        axisTitleData:
+            FlAxisTitleData.lerp(a.axisTitleData, b.axisTitleData, t),
+        rangeAnnotations:
+            RangeAnnotations.lerp(a.rangeAnnotations, b.rangeAnnotations, t),
         barTouchData: b.barTouchData,
         gridData: FlGridData.lerp(a.gridData, b.gridData, t),
         borderData: FlBorderData.lerp(a.borderData, b.borderData, t),
+        extraLinesData:
+            ExtraLinesData.lerp(a.extraLinesData, b.extraLinesData, t),
         maxY: lerpDouble(a.maxY, b.maxY, t),
         minY: lerpDouble(a.minY, b.minY, t),
         backgroundColor: Color.lerp(a.backgroundColor, b.backgroundColor, t),
@@ -266,8 +278,9 @@ class BarChartGroupData with EquatableMixin {
       return 0;
     }
 
-    final double sumWidth =
-        barRods.map((rodData) => rodData.width).reduce((first, second) => first + second);
+    final double sumWidth = barRods
+        .map((rodData) => rodData.width)
+        .reduce((first, second) => first + second);
     final double spaces = (barRods.length - 1) * barsSpace;
 
     return sumWidth + spaces;
@@ -285,18 +298,20 @@ class BarChartGroupData with EquatableMixin {
       x: x ?? this.x,
       barRods: barRods ?? this.barRods,
       barsSpace: barsSpace ?? this.barsSpace,
-      showingTooltipIndicators: showingTooltipIndicators ?? this.showingTooltipIndicators,
+      showingTooltipIndicators:
+          showingTooltipIndicators ?? this.showingTooltipIndicators,
     );
   }
 
   /// Lerps a [BarChartGroupData] based on [t] value, check [Tween.lerp].
-  static BarChartGroupData lerp(BarChartGroupData a, BarChartGroupData b, double t) {
+  static BarChartGroupData lerp(
+      BarChartGroupData a, BarChartGroupData b, double t) {
     return BarChartGroupData(
       x: (a.x + (b.x - a.x) * t).round(),
       barRods: lerpBarChartRodDataList(a.barRods, b.barRods, t),
       barsSpace: lerpDouble(a.barsSpace, b.barsSpace, t),
-      showingTooltipIndicators:
-          lerpIntList(a.showingTooltipIndicators, b.showingTooltipIndicators, t),
+      showingTooltipIndicators: lerpIntList(
+          a.showingTooltipIndicators, b.showingTooltipIndicators, t),
     );
   }
 
@@ -397,8 +412,10 @@ class BarChartRodData with EquatableMixin {
       width: lerpDouble(a.width, b.width, t),
       borderRadius: BorderRadius.lerp(a.borderRadius, b.borderRadius, t),
       y: lerpDouble(a.y, b.y, t),
-      backDrawRodData: BackgroundBarChartRodData.lerp(a.backDrawRodData, b.backDrawRodData, t),
-      rodStackItems: lerpBarChartRodStackList(a.rodStackItems, b.rodStackItems, t),
+      backDrawRodData: BackgroundBarChartRodData.lerp(
+          a.backDrawRodData, b.backDrawRodData, t),
+      rodStackItems:
+          lerpBarChartRodStackList(a.rodStackItems, b.rodStackItems, t),
     );
   }
 
@@ -458,7 +475,8 @@ class BarChartRodStackItem with EquatableMixin {
   }
 
   /// Lerps a [BarChartRodStackItem] based on [t] value, check [Tween.lerp].
-  static BarChartRodStackItem lerp(BarChartRodStackItem a, BarChartRodStackItem b, double t) {
+  static BarChartRodStackItem lerp(
+      BarChartRodStackItem a, BarChartRodStackItem b, double t) {
     return BarChartRodStackItem(
       lerpDouble(a.fromY, b.fromY, t),
       lerpDouble(a.toY, b.toY, t),
@@ -581,7 +599,8 @@ class BarTouchData extends FlTouchData with EquatableMixin {
       enabled: enabled ?? this.enabled,
       touchTooltipData: touchTooltipData ?? this.touchTooltipData,
       touchExtraThreshold: touchExtraThreshold ?? this.touchExtraThreshold,
-      allowTouchBarBackDraw: allowTouchBarBackDraw ?? this.allowTouchBarBackDraw,
+      allowTouchBarBackDraw:
+          allowTouchBarBackDraw ?? this.allowTouchBarBackDraw,
       handleBuiltInTouches: handleBuiltInTouches ?? this.handleBuiltInTouches,
       touchCallback: touchCallback ?? this.touchCallback,
     );
@@ -649,7 +668,8 @@ class BarTouchTooltipData with EquatableMixin {
     bool fitInsideVertically,
   })  : tooltipBgColor = tooltipBgColor ?? Colors.white,
         tooltipRoundedRadius = tooltipRoundedRadius ?? 4,
-        tooltipPadding = tooltipPadding ?? const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        tooltipPadding = tooltipPadding ??
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         tooltipBottomMargin = tooltipBottomMargin ?? 16,
         maxContentWidth = maxContentWidth ?? 120,
         getTooltipItem = getTooltipItem ?? defaultBarTooltipItem,
@@ -799,7 +819,8 @@ class BarTouchedSpot extends TouchedSpot with EquatableMixin {
 
 /// It lerps a [BarChartData] to another [BarChartData] (handles animation for updating values)
 class BarChartDataTween extends Tween<BarChartData> {
-  BarChartDataTween({BarChartData begin, BarChartData end}) : super(begin: begin, end: end);
+  BarChartDataTween({BarChartData begin, BarChartData end})
+      : super(begin: begin, end: end);
 
   /// Lerps a [BarChartData] based on [t] value, check [Tween.lerp].
   @override
